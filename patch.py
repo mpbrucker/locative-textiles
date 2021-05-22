@@ -18,6 +18,22 @@ cur_patches = {}
 
 aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_7X7_50)
 aruco_params = cv.aruco.DetectorParameters_create()
+proj_corners = np.zeros((4,2))
+MAP_CORNER_LIST = [[0,0],[1280,0],[1280,720],[720,0]]
+
+# Updates the corner entries in the list of points for the homography matrix
+def get_patch_corners(corners, ids):
+    patches = {}
+    for (corner, id) in zip(corners, ids):
+        corners_list = corner.reshape((4,2))
+
+        # We have two sets of AR tags, one for the projector alignment and one for the actual piece
+        if id < 15:
+            proj_corners[id-11] = corners_list[id-11]
+        if id > 40:
+            patches[id] = corners_list
+
+
 
 # Processes a webcam frame and, if a patch is found, calls the corresponding server callback
 async def capture(callback):
@@ -28,10 +44,21 @@ async def capture(callback):
         ret, frame = cap.read()
         (corners, ids, rejected) = cv.aruco.detectMarkers(frame, aruco_dict,
         parameters=aruco_params)
-        if ids is not None and ids.shape[0] > 0:
+
+        # We must see all four calibration tags in order to determine the location of the patch
+        if ids is not None and ids.shape[0] > 4:
             frames_out = 0
 
             ids = ids.flatten()
+
+            patch_corners = get_patch_corners(corners, ids)
+
+            # Perspective transform to the corners of the map AR tags
+            if np.count_nonzero(proj_corners) == 8:
+                pts_dst = np.array(MAP_CORNER_LIST)
+                h_proj, status = cv.findHomography(proj_corners, pts_dst)
+                frame_proj = cv.warpPerspective(frame, h_proj, (1280, 720)) # img size is based on 4 px per stitch
+
 
             for (corner, patch_id) in zip(corners, ids):
                 corner_list = corner.reshape((4,2))
@@ -42,7 +69,6 @@ async def capture(callback):
                 cv.circle(frame, (int(center[0]), int(center[1])), 5, (255, 0, 0), 2)
 
                 if cur_patches.get(patch_id, None) is None:
-                    print("test")
                     await callback(patch_ips[patch_id], "new patch")
                     cur_patches[patch_id] = {"frames_stopped": 1, "center": center}
                 else:
@@ -70,9 +96,6 @@ async def capture(callback):
             break
     cap.release()
     cv.destroyAllWindows()
-    
-if __name__ == '__main__':
-    capture_sync()
 
 
 
