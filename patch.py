@@ -14,7 +14,7 @@ if not cap.isOpened():
 
 # Match the ARuco tag ID to the corresponding client IP address
 patch_ips = {44: "192.168.1.111"}
-cur_patches = {}
+
 
 aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_7X7_50)
 aruco_params = cv.aruco.DetectorParameters_create()
@@ -22,8 +22,8 @@ proj_corners = np.zeros((4,2))
 MAP_CORNER_LIST = [[0,0],[1280,0],[1280,720],[0, 720]]
 
 # The boundary latitude/longitude corresponding to the map area
-X_COORD = (123.456, 123.555)
-y_COORD = (123.456, 123.667)
+X_COORD = (123.456, 456.567)
+Y_COORD = (123.456, 456.789)
 
 # Updates the corner entries in the list of points for the homography matrix
 def get_patch_corners(corners, ids):
@@ -43,6 +43,7 @@ def get_patch_corners(corners, ids):
 async def capture(callback):
     is_found = False
     frames_out = 0
+    cur_patches = {}
 
     while True:
         ret, frame = cap.read()
@@ -62,10 +63,10 @@ async def capture(callback):
 
             # Iterate through each patch tag and find its location on the map
             for patch_id in patch_corners.keys():
-                corners = patch_corners[patch_id]
+                corners_list = patch_corners[patch_id]
 
-                top_left = corner_list[0]
-                bottom_right = corner_list[2]
+                top_left = corners_list[0]
+                bottom_right = corners_list[2]
                 center = (top_left+bottom_right)/2
 
                 cv.circle(frame_proj, (int(center[0]), int(center[1])), 5, (255, 0, 0), 2)
@@ -73,7 +74,8 @@ async def capture(callback):
                 # remap the x/y frame coordinates to the physical map coordinates
                 new_center_x = np.interp(center[0], (0, 1280), X_COORD)
                 new_center_y = np.interp(center[1], (0, 720), Y_COORD)
-
+                print("{} {}".format(new_center_x, new_center_y))
+                print(cur_patches)
                 # Based on current state of patch, send callback message(s)
                 if cur_patches.get(patch_id, None) is None:
                     await callback(patch_ips[patch_id], "new patch")
