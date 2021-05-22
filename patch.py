@@ -76,12 +76,6 @@ async def capture(callback):
 
                 cv.circle(frame_proj, (int(new_x), int(new_y)), 5, (255, 0, 0), 2)
 
-                # remap the x/y frame coordinates to the physical map coordinates
-                new_center_x = np.interp(center[0], (0, 1280), X_COORD)
-                new_center_y = np.interp(center[1], (0, 720), Y_COORD)
-                print("{} {}".format(new_x, new_y))
-                # print(cur_patches)
-                # Based on current state of patch, send callback message(s)
                 if cur_patches.get(patch_id, None) is None:
                     await callback(patch_ips[patch_id], "new patch")
                     cur_patches[patch_id] = {"frames_stopped": 1, "center": center}
@@ -97,6 +91,8 @@ async def capture(callback):
                         # If the patch has remained in the same place for long enough, we can send a message the location is locked in
                         if cur_patches[patch_id]["frames_stopped"] > 60 and not is_found:
                             is_found = True
+                            new_center_x = np.interp(center[0], (0, 1280), X_COORD)
+                            new_center_y = np.interp(center[1], (0, 720), Y_COORD)
                             await callback(patch_ips[patch_id], "found at {} {}".format(new_center_x, new_center_y))
 
                     cur_patches[patch_id]["center"] = center
