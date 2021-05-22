@@ -68,14 +68,19 @@ async def capture(callback):
                 top_left = corners_list[0]
                 bottom_right = corners_list[2]
                 center = (top_left+bottom_right)/2
+                center_x = center[0]
+                center_y = center[1]
+                # Manually do the transform for this point
+                new_x = (h_proj[0][0]*center_x+h_proj[0][1]*center_y+h_proj[0][2])/(h_proj[2][0]*center_x+h_proj[2][1]*center_y+h_proj[2][2])
+                new_y = (h_proj[1][0]*center_x+h_proj[1][1]*center_y+h_proj[1][2])/(h_proj[2][0]*center_x+h_proj[2][1]*center_y+h_proj[2][2])
 
-                cv.circle(frame_proj, (int(center[0]), int(center[1])), 5, (255, 0, 0), 2)
+                cv.circle(frame_proj, (int(new_x), int(new_y)), 5, (255, 0, 0), 2)
 
                 # remap the x/y frame coordinates to the physical map coordinates
                 new_center_x = np.interp(center[0], (0, 1280), X_COORD)
                 new_center_y = np.interp(center[1], (0, 720), Y_COORD)
-                print("{} {}".format(new_center_x, new_center_y))
-                print(cur_patches)
+                print("{} {}".format(new_x, new_y))
+                # print(cur_patches)
                 # Based on current state of patch, send callback message(s)
                 if cur_patches.get(patch_id, None) is None:
                     await callback(patch_ips[patch_id], "new patch")
