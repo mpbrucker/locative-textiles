@@ -9,7 +9,7 @@ from patch import capture
 class PatchServer():
     def __init__(self):
         self.clients = {}
-        self.start_server = websockets.serve(self.counter, "192.168.1.107", 8765)
+        self.start_server = websockets.serve(self.counter, "192.168.0.117", 8765)
         print('testing')
         asyncio.get_event_loop().run_until_complete(self.start_server)
         asyncio.get_event_loop().run_forever()

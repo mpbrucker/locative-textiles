@@ -7,13 +7,13 @@ import cv2 as cv
 import asyncio
 import time
 
-cap = cv.VideoCapture(1)
+cap = cv.VideoCapture(2)
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
 
 # Match the ARuco tag ID to the corresponding client IP address
-patch_ips = {44: "192.168.1.111"}
+patch_ips = {44: "192.168.0.214", 45: "192.168.0.214"}
 
 
 aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_7X7_50)
